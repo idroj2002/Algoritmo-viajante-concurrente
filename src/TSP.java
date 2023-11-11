@@ -11,13 +11,17 @@ import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.Vector;
 
+import static java.lang.System.exit;
+
 
 public class TSP
 {
     //public static final int INF = Integer.MAX_VALUE;
     public static final int INF = -1;
     public static final int CMatrixPading = 3;
+    private static final int DefaultThreads = 8;
 
+    private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
 
     public int DistanceMatrix[][];
     // Priority queue to store live nodes of the search tree
@@ -26,6 +30,8 @@ public class TSP
     private  int NCities=0;
 
     private Node Solution=null;
+    private int threads;
+    private ConcurrentMethod concurrentMethod;
 
     // Statistics of purged and processed nodes.
     private long PurgedNodes = 0;
@@ -56,12 +62,43 @@ public class TSP
     public TSP()
     {
         InitDefaultCitiesDistances();
+        this.threads = DefaultThreads;
+        this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
     }
     public TSP(String citiesPath)
     {
         ReadCitiesFile(citiesPath);
+        this.threads = DefaultThreads;
+        this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
     }
-
+    public TSP(String citiesPath, int threadsNum)
+    {
+        ReadCitiesFile(citiesPath);
+        this.threads = threadsNum;
+        this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
+    }
+    public TSP(String citiesPath, int threadsNum, String concurrentMethod)
+    {
+        ReadCitiesFile(citiesPath);
+        this.threads = threadsNum;
+        switch (concurrentMethod) {
+            case "FixedThreadPool":
+                this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
+                break;
+            case "CachedThreadPool":
+                this.concurrentMethod = ConcurrentMethod.CachedThreadPool;
+                break;
+            case "ForkJoinPool":
+                this.concurrentMethod = ConcurrentMethod.ForkJoinPool;
+                break;
+            default:
+                System.err.println("Invalid concurrent method. Concurrent methods accepted are:\n" +
+                        "\t- FixedThreadPool\n" +
+                        "\t- CachedThreadPool\n" +
+                        "\t- ForkJoinPool\n");
+                exit(-1);
+        }
+    }
 
     public void InitDefaultCitiesDistances()
     {
