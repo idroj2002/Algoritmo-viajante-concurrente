@@ -166,6 +166,7 @@ public class Node
         // Initialize row array to INF
         java.util.Arrays.fill(row, tsp.INF);
 
+
         // row[i] contains minimum in row i
         for (int i = 0; i < tsp.getNCities(); i++) {
             for (int j = 0; j < tsp.getNCities(); j++) {

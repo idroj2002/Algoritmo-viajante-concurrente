@@ -136,7 +136,7 @@ public class TSP
         //System.out.println(root);
 
         // Calculate the lower bound of the path starting at node 0
-       root.calculateSetCost();
+        root.calculateSetCost();
 
         // Add root to the list of live nodes
         pushNode(root);
