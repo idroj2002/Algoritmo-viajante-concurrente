@@ -10,6 +10,8 @@ import java.util.Collections;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static java.lang.System.exit;
 
@@ -26,10 +28,13 @@ public class TSP
     public int DistanceMatrix[][];
     // Priority queue to store live nodes of the search tree
     PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>(Collections.reverseOrder((Node c1, Node c2) -> Integer.compare(c1.getCost(),c2.getCost())));
-    //PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>();
+    // PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>();
     private  int NCities=0;
 
     private Node Solution=null;
+
+    // Concurrent variables
+    private ExecutorService pool;
     private int threads;
     private ConcurrentMethod concurrentMethod;
 
@@ -64,18 +69,22 @@ public class TSP
         InitDefaultCitiesDistances();
         this.threads = DefaultThreads;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
+        initPool();
     }
     public TSP(String citiesPath)
     {
         ReadCitiesFile(citiesPath);
         this.threads = DefaultThreads;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
+        initPool();
+
     }
     public TSP(String citiesPath, int threadsNum)
     {
         ReadCitiesFile(citiesPath);
         this.threads = threadsNum;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
+        initPool();
     }
     public TSP(String citiesPath, int threadsNum, String concurrentMethod)
     {
@@ -98,6 +107,7 @@ public class TSP
                         "\t- ForkJoinPool\n");
                 exit(-1);
         }
+        initPool();
     }
 
     public void InitDefaultCitiesDistances()
@@ -107,6 +117,16 @@ public class TSP
                                     {15, 35, INF, 30},
                                     {20, 25, 30, INF}};
         NCities = 4;
+    }
+
+    private void initPool() {
+        if (concurrentMethod == ConcurrentMethod.FixedThreadPool) {
+            pool = Executors.newFixedThreadPool(threads);
+        } else if (concurrentMethod == ConcurrentMethod.CachedThreadPool) {
+            pool = Executors.newCachedThreadPool();
+        } else {
+            pool = null;
+        }
     }
 
     public void ReadCitiesFile (String citiesPath)
