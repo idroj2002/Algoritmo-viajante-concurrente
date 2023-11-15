@@ -28,6 +28,7 @@ public class TSP_Conc
         }
 
         Node solution = tsp.Solve();
+        System.exit(0);
     }
 
 }

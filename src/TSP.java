@@ -207,11 +207,9 @@ public class TSP
         root.calculateSetCost();
 
         // Add root to the list of live nodes
-        pushNode(root);
+        //pushNode(root);
 
-        addNodeToPool(popNode());
-
-        System.out.println(threadPoolExecutor.getQueue());
+        addNodeToPool(root);
 
         // Pop a live node with the least cost, check it is a solution and adds its children to the list of live nodes.
         /*while ((min=popNode())!=null) // Pop the live node with the least estimated cost
@@ -263,10 +261,26 @@ public class TSP
         }*/
 
         // if (true) System.out.printf("\nFinal Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
-        try {
+        /*try {
             sleep(1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        }*/
+        while (true) {
+            // Dormir por un breve período de tiempo para evitar una espera activa intensiva
+            try {
+                sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            // Obtener la cantidad de tareas en cola
+            int queueSize = ((ThreadPoolExecutor) pool).getQueue().size();
+
+            // Si no hay tareas en cola, salir del bucle
+            if (queueSize == 0 && ((ThreadPoolExecutor) pool).getActiveCount() == 0) {
+                pool.shutdown();
+                break;
+            }
         }
         return getSolution();  // Return solution
     }
