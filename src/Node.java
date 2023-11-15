@@ -8,7 +8,7 @@ import java.util.Vector;
 import java.util.stream.Collectors;
 
 // Node that implements the Branch&Bound search three elements in the solution space
-public class Node
+public class Node implements Comparable<Node>
 {
     // Helps in tracing the path when the answer is found
     // Stores the edges of the path completed till current visited node
@@ -264,4 +264,8 @@ public class Node
                "Level: \t" + getLevel()+"\n";
     }
 
+    @Override
+    public int compareTo(Node o) {
+        return Integer.compare(this.getCost(), o.getCost());
+    }
 }
