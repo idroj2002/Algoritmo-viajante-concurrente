@@ -12,8 +12,10 @@ import java.util.Scanner;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.lang.System.exit;
+import static java.lang.System.out;
 import static java.lang.Thread.sleep;
 
 
@@ -38,6 +40,7 @@ public class TSP
     private ExecutorService pool;
     private int threads;
     private ConcurrentMethod concurrentMethod;
+    private ThreadPoolExecutor threadPoolExecutor;
 
     // Statistics of purged and processed nodes.
     private long PurgedNodes = 0;
@@ -62,6 +65,13 @@ public class TSP
     public long getPurgedNodes() { return PurgedNodes; }
     public long getProcessedNodes() { return ProcessedNodes; }
     public void prugedNodesIncrement() { PurgedNodes++; }
+
+    /*
+    * TO-DO LIST
+    *   - Fer que el programa principal acabi quan acaben els fills
+    *   - Fer que cada fil guardi en variables els seus fills
+    *   - Fer priorityBlockingQueue per guardar cota superior
+    * */
 
     // Constructors.
     public TSP()
@@ -127,6 +137,7 @@ public class TSP
         } else {
             pool = null;
         }
+        threadPoolExecutor = (ThreadPoolExecutor) pool;
     }
 
     public void ReadCitiesFile (String citiesPath)
@@ -200,6 +211,7 @@ public class TSP
 
         addNodeToPool(popNode());
 
+        System.out.println(threadPoolExecutor.getQueue());
 
         // Pop a live node with the least cost, check it is a solution and adds its children to the list of live nodes.
         /*while ((min=popNode())!=null) // Pop the live node with the least estimated cost
