@@ -12,6 +12,7 @@ import java.util.Scanner;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.lang.System.exit;
@@ -41,6 +42,7 @@ public class TSP
     private int threads;
     private ConcurrentMethod concurrentMethod;
     private ThreadPoolExecutor threadPoolExecutor;
+    private PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
 
     // Statistics of purged and processed nodes.
     private long PurgedNodes = 0;
@@ -54,9 +56,10 @@ public class TSP
     public void setNCities(int NCities) {
         this.NCities = NCities;
     }
-    public Node getSolution() { return Solution; }
-    public void setSolution(Node solution) {
-        if (Solution == null || solution.getCost() < Solution.getCost()) Solution = solution;
+    public Node getSolution() { return solution.peek(); }
+    public void setSolution(Node sol) {
+        if (Solution == null || sol.getCost() < Solution.getCost()) Solution = sol;
+        this.solution.add(sol);
     }
     public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
     public int[][] getDistanceMatrix() {
