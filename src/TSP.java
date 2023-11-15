@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.lang.System.exit;
+import static java.lang.Thread.sleep;
 
 
 public class TSP
@@ -29,7 +30,7 @@ public class TSP
     // Priority queue to store live nodes of the search tree
     PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>(Collections.reverseOrder((Node c1, Node c2) -> Integer.compare(c1.getCost(),c2.getCost())));
     // PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>();
-    private  int NCities=0;
+    private int NCities=0;
 
     private Node Solution=null;
 
@@ -50,11 +51,9 @@ public class TSP
     public void setNCities(int NCities) {
         this.NCities = NCities;
     }
-    public Node getSolution() {
-        return Solution;
-    }
+    public Node getSolution() { return Solution; }
     public void setSolution(Node solution) {
-        Solution = solution;
+        if (Solution == null || solution.getCost() < Solution.getCost()) Solution = solution;
     }
     public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
     public int[][] getDistanceMatrix() {
@@ -62,6 +61,7 @@ public class TSP
     }
     public long getPurgedNodes() { return PurgedNodes; }
     public long getProcessedNodes() { return ProcessedNodes; }
+    public void prugedNodesIncrement() { PurgedNodes++; }
 
     // Constructors.
     public TSP()
@@ -198,8 +198,11 @@ public class TSP
         // Add root to the list of live nodes
         pushNode(root);
 
+        addNodeToPool(popNode());
+
+
         // Pop a live node with the least cost, check it is a solution and adds its children to the list of live nodes.
-        while ((min=popNode())!=null) // Pop the live node with the least estimated cost
+        /*while ((min=popNode())!=null) // Pop the live node with the least estimated cost
         {
             ProcessedNodes++;
             if (true && (min.getTotalNodes()%10000)==0) System.out.printf("Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d\r",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
@@ -245,11 +248,19 @@ public class TSP
                         PurgedNodes++;
                 }
             }
+        }*/
+
+        // if (true) System.out.printf("\nFinal Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
+        try {
+            sleep(1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-
-        if (true) System.out.printf("\nFinal Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
-
         return getSolution();  // Return solution
+    }
+
+    public void addNodeToPool(Node node) {
+        pool.execute(new FindTSPTask(this, node));
     }
 
     // Add node to the queue of pending processing nodes
