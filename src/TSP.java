@@ -41,7 +41,6 @@ public class TSP
     private ExecutorService pool;
     private int threads;
     private ConcurrentMethod concurrentMethod;
-    private ThreadPoolExecutor threadPoolExecutor;
     private PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
 
     // Statistics of purged and processed nodes.
@@ -59,6 +58,12 @@ public class TSP
     public Node getSolution() { return solution.peek(); }
     public void setSolution(Node sol) {
         this.solution.add(sol);
+        /* ELIMINAR NODOS INNECESARIOS
+        solution.forEach(node -> {
+            if (node.getCost() > sol.getCost()) {
+                solution.remove(node);
+            }
+        });*/
     }
     public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
     public int[][] getDistanceMatrix() {
@@ -67,13 +72,6 @@ public class TSP
     public long getPurgedNodes() { return PurgedNodes; }
     public long getProcessedNodes() { return ProcessedNodes; }
     public void prugedNodesIncrement() { PurgedNodes++; }
-
-    /*
-    * TO-DO LIST
-    *   - Fer que el programa principal acabi quan acaben els fills
-    *   - Fer que cada fil guardi en variables els seus fills
-    *   - Fer priorityBlockingQueue per guardar cota superior
-    * */
 
     // Constructors.
     public TSP()
@@ -139,7 +137,6 @@ public class TSP
         } else {
             pool = null;
         }
-        threadPoolExecutor = (ThreadPoolExecutor) pool;
     }
 
     public void ReadCitiesFile (String citiesPath)
@@ -268,7 +265,7 @@ public class TSP
         while (true) {
             // Dormir por un breve período de tiempo para evitar una espera activa intensiva
             try {
-                sleep(1);
+                sleep(100);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -306,9 +303,16 @@ public class TSP
     // Purge nodes from the queue whose cost is bigger than the minCost.
     public void PurgeWorseNodes(int minCost)
     {
-        int Pending = NodesQueue.size();
-        NodesQueue.removeIf(node -> node.getCost()>=minCost);
-        PurgedNodes += Pending-NodesQueue.size();
+        System.out.println(((ThreadPoolExecutor) pool).getQueue().size());
+        ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
+            FindTSPTask task = (FindTSPTask) runnable;
+            if (task.getNode().getCost() > minCost) {
+                ((ThreadPoolExecutor) pool).getQueue().remove(task);
+            }
+        });
+        System.out.println(((ThreadPoolExecutor) pool).getQueue().size());
+        System.out.println("");
+
     }
 
     // Print the solution to console
