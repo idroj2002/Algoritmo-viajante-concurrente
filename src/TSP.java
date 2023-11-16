@@ -58,7 +58,6 @@ public class TSP
     }
     public Node getSolution() { return solution.peek(); }
     public void setSolution(Node sol) {
-        if (Solution == null || sol.getCost() < Solution.getCost()) Solution = sol;
         this.solution.add(sol);
     }
     public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
@@ -209,9 +208,6 @@ public class TSP
         // Calculate the lower bound of the path starting at node 0
         root.calculateSetCost();
 
-        // Add root to the list of live nodes
-        //pushNode(root);
-
         addNodeToPool(root);
 
         // Pop a live node with the least cost, check it is a solution and adds its children to the list of live nodes.
@@ -272,7 +268,7 @@ public class TSP
         while (true) {
             // Dormir por un breve período de tiempo para evitar una espera activa intensiva
             try {
-                sleep(10);
+                sleep(1);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

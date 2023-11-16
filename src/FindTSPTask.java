@@ -44,12 +44,8 @@ public class FindTSPTask implements Runnable {
                 {
                     // Add a child to the list of live nodes
                     child.setCost (child_cost);
-                    tsp.pushNode(child);
+                    tsp.addNodeToPool(child);
                 }
-                else if (tsp.getSolution()!=null && child_cost>tsp.getSolution().getCost())
-                    tsp.prugedNodesIncrement();
-
-                tsp.addNodeToPool(child);
             }
         }
     }
