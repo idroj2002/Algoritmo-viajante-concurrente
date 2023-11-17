@@ -1,3 +1,5 @@
+import java.util.Comparator;
+
 public class FindTSPTask implements Runnable {
     
     TSP tsp;

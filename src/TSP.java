@@ -10,10 +10,7 @@ import java.util.Collections;
 import java.util.PriorityQueue;
 import java.util.Scanner;
 import java.util.Vector;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.PriorityBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.*;
 
 import static java.lang.System.exit;
 import static java.lang.System.out;
@@ -25,7 +22,7 @@ public class TSP
     //public static final int INF = Integer.MAX_VALUE;
     public static final int INF = -1;
     public static final int CMatrixPading = 3;
-    private static final int DefaultThreads = 8;
+    private static final int DefaultThreads = 1;
 
     private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
 
@@ -131,7 +128,14 @@ public class TSP
 
     private void initPool() {
         if (concurrentMethod == ConcurrentMethod.FixedThreadPool) {
-            pool = Executors.newFixedThreadPool(threads);
+            // pool = Executors.newFixedThreadPool(threads);
+            BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPTaskComparator());
+            pool = new ThreadPoolExecutor(
+                    threads, // Tamaño del pool
+                    threads, // Tamaño máximo del pool
+                    0L, TimeUnit.MILLISECONDS, // Tiempo de espera antes de que se eliminen los hilos inactivos
+                    queue // Cola de trabajos
+            );
         } else if (concurrentMethod == ConcurrentMethod.CachedThreadPool) {
             pool = Executors.newCachedThreadPool();
         } else {
@@ -303,16 +307,12 @@ public class TSP
     // Purge nodes from the queue whose cost is bigger than the minCost.
     public void PurgeWorseNodes(int minCost)
     {
-        System.out.println(((ThreadPoolExecutor) pool).getQueue().size());
         ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
-            if (task.getNode().getCost() > minCost) {
+            if (task != null && task.getNode().getCost() > minCost) {
                 ((ThreadPoolExecutor) pool).getQueue().remove(task);
             }
         });
-        System.out.println(((ThreadPoolExecutor) pool).getQueue().size());
-        System.out.println("");
-
     }
 
     // Print the solution to console
