@@ -6,10 +6,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.PriorityQueue;
-import java.util.Scanner;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.System.exit;
@@ -318,12 +315,22 @@ public class TSP
     public void PurgeWorseNodes(int minCost)
     {
         System.out.println("PURGE WITH MAX COST OF " + minCost);
-        ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
+        /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
-            if (task != null && task.getNode().getCost() > minCost) {
+            if (task.getNode().getCost() > minCost) {
                 ((ThreadPoolExecutor) pool).getQueue().remove(task);
             }
-        });
+        });*/
+        Iterator<Runnable> iterator = ((ThreadPoolExecutor) pool).getQueue().iterator();
+        while (iterator.hasNext()) {
+            Runnable runnable = iterator.next();
+            if (runnable instanceof FindTSPTask) {
+                FindTSPTask task = (FindTSPTask) runnable;
+                if (task.getNode().getCost() > minCost) {
+                    iterator.remove(); // Utiliza el iterador para eliminar de forma segura
+                }
+            }
+        }
 
         System.out.print("END OF PURGE WITH COST " + minCost + ". QUEUE:\n[");
         ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
