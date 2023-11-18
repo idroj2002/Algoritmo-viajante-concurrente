@@ -19,7 +19,7 @@ public class TSP
     //public static final int INF = Integer.MAX_VALUE;
     public static final int INF = -1;
     public static final int CMatrixPading = 3;
-    private static final int DefaultThreads = 1;
+    private static final int DefaultThreads = 8;
 
     private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
 
@@ -49,7 +49,9 @@ public class TSP
     public void setNCities(int NCities) {
         this.NCities = NCities;
     }
-    public Node getSolution() { return solution.peek(); }
+    public Node getSolution() {
+        return solution.peek();
+    }
     public void setSolution(Node sol) {
         this.solution.add(sol);
         // ELIMINAR NODOS INNECESARIOS
@@ -58,14 +60,14 @@ public class TSP
                 solution.remove(node);
             }
         });*/
-        System.out.print("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE:\n[");
-        ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
+        System.out.println("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE LENGTH: " + ((ThreadPoolExecutor) pool).getQueue().size());
+        /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task != null) {
                 if (task.getNode().getCost() > 364) System.out.print(task.getNode().getCost() + ", ");
             }
         });
-        System.out.print("]\n");
+        System.out.print("]\n");*/
     }
     public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
     public int[][] getDistanceMatrix() {
@@ -136,6 +138,7 @@ public class TSP
             //pool = Executors.newFixedThreadPool(threads);
             /**/
             BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPTaskComparator());
+
             pool = new ThreadPoolExecutor(
                     threads, // Tamaño del pool
                     threads, // Tamaño máximo del pool
@@ -314,7 +317,7 @@ public class TSP
     // Purge nodes from the queue whose cost is bigger than the minCost.
     public void PurgeWorseNodes(int minCost)
     {
-        System.out.println("PURGE WITH MAX COST OF " + minCost);
+        //System.out.println("PURGE WITH MAX COST OF " + minCost);
         /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task.getNode().getCost() > minCost) {
@@ -332,14 +335,14 @@ public class TSP
             }
         }
 
-        System.out.print("END OF PURGE WITH COST " + minCost + ". QUEUE:\n[");
+        /*System.out.print("END OF PURGE. QUEUE:\n[");
         ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task != null) {
-                if (task.getNode().getCost() > minCost) System.out.print(task.getNode().getCost() + ", ");
+                System.out.print(task.getNode().getCost() + ", ");
             }
         });
-        System.out.print("]\n");
+        System.out.print("]\n");*/
     }
 
     // Print the solution to console

@@ -20,9 +20,8 @@ public class FindTSPTask implements Runnable {
         if (debug) System.out.println("New thread started with node cost of: " + node.getCost());
 
         while (!finish){
-            Boolean[] visited = node.visitedCities;
             if (debug) {
-                for (Boolean visit : visited) {
+                for (Boolean visit : node.visitedCities) {
                     if (visit) System.out.print("T");
                     else System.out.print("F");
                 }
