@@ -1,3 +1,5 @@
+import org.javatuples.Pair;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -8,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.System.exit;
+import static java.lang.System.out;
 import static java.lang.Thread.sleep;
 
 
@@ -19,7 +22,7 @@ public class TSP
     public static final int CMatrixPading = 3;
     private static final int DefaultThreads = 8;
 
-    private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoin}
+    private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
 
     public int DistanceMatrix[][];
     // Priority queue to store live nodes of the search tree
@@ -110,7 +113,7 @@ public class TSP
                 this.concurrentMethod = ConcurrentMethod.CachedThreadPool;
                 break;
             case "ForkJoinPool":
-                this.concurrentMethod = ConcurrentMethod.ForkJoin;
+                this.concurrentMethod = ConcurrentMethod.ForkJoinPool;
                 break;
             default:
                 System.err.println("Invalid concurrent method. Concurrent methods accepted are:\n" +
@@ -199,7 +202,7 @@ public class TSP
     {
         Instant start = Instant.now();
 
-        Node solution = concurrentMethod == ConcurrentMethod.ForkJoin ? ForkJoinSolve(DistanceMatrix) : PoolSolve(DistanceMatrix);
+        Node solution = concurrentMethod == ConcurrentMethod.ForkJoinPool ? ForkJoinSolve(DistanceMatrix) : PoolSolve(DistanceMatrix);
         printSolution("\nOptimal Solution: ", solution);
 
         Instant finish = Instant.now();
