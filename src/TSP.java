@@ -16,6 +16,7 @@ import static java.lang.Thread.sleep;
 
 public class TSP
 {
+    static Boolean debug = false;
     //public static final int INF = Integer.MAX_VALUE;
     public static final int INF = -1;
     public static final int CMatrixPading = 3;
@@ -60,7 +61,7 @@ public class TSP
                 solution.remove(node);
             }
         });*/
-        System.out.println("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE LENGTH: " + ((ThreadPoolExecutor) pool).getQueue().size());
+        if (debug) System.out.println("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE LENGTH: " + ((ThreadPoolExecutor) pool).getQueue().size());
         /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task != null) {
@@ -147,7 +148,14 @@ public class TSP
             );
             /**/
         } else if (concurrentMethod == ConcurrentMethod.CachedThreadPool) {
-            pool = Executors.newCachedThreadPool();
+            BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPTaskComparator());
+
+            pool = new ThreadPoolExecutor(
+                    0, // Tamaño del pool
+                    threads, // Tamaño máximo del pool
+                    60L, TimeUnit.SECONDS, // Tiempo de espera antes de que se eliminen los hilos inactivos
+                    queue // Cola de trabajos
+            );
         } else {
             pool = null;
         }
