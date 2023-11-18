@@ -1,11 +1,9 @@
-import java.util.Comparator;
-
-public class FindTSPTask implements Runnable {
+public class FindTSPPoolTask implements Runnable {
     
     TSP tsp;
     Node node;
     
-    public FindTSPTask(TSP tsp, Node node) {
+    public FindTSPPoolTask(TSP tsp, Node node) {
         this.tsp = tsp;
         this.node = node;
     }

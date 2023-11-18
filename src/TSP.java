@@ -1,5 +1,3 @@
-import org.javatuples.Pair;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,7 +8,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.System.exit;
-import static java.lang.System.out;
 import static java.lang.Thread.sleep;
 
 
@@ -37,6 +34,7 @@ public class TSP
     private int threads;
     private ConcurrentMethod concurrentMethod;
     private PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
+    private ForkJoinPool forkJoinPool = null;
 
     // Statistics of purged and processed nodes.
     private long PurgedNodes = 0;
@@ -138,7 +136,7 @@ public class TSP
         if (concurrentMethod == ConcurrentMethod.FixedThreadPool) {
             //pool = Executors.newFixedThreadPool(threads);
             /**/
-            BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPTaskComparator());
+            BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPPoolTaskComparator());
 
             pool = new ThreadPoolExecutor(
                     threads, // Tamaño del pool
@@ -148,7 +146,7 @@ public class TSP
             );
             /**/
         } else if (concurrentMethod == ConcurrentMethod.CachedThreadPool) {
-            BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPTaskComparator());
+            BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPPoolTaskComparator());
 
             pool = new ThreadPoolExecutor(
                     0, // Tamaño del pool
@@ -158,6 +156,7 @@ public class TSP
             );
         } else {
             pool = null;
+            forkJoinPool = new ForkJoinPool(threads);
         }
     }
 
@@ -317,7 +316,12 @@ public class TSP
         // Calculate the lower bound of the path starting at node 0
         root.calculateSetCost();
 
+        FindTSPForkTask findTSPForkTask = new FindTSPForkTask(this, root);
+
+        return forkJoinPool.invoke(findTSPForkTask);
+
         // Add root to the list of live nodes
+        /*
         pushNode(root);
 
         // Pop a live node with the least cost, check it is a solution and adds its children to the list of live nodes.
@@ -372,10 +376,11 @@ public class TSP
         if (true) System.out.printf("\nFinal Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
 
         return getSolution();  // Return solution
+        */
     }
 
     public void addNodeToPool(Node node) {
-        pool.execute(new FindTSPTask(this, node));
+        pool.execute(new FindTSPPoolTask(this, node));
     }
 
     // Add node to the queue of pending processing nodes
@@ -406,8 +411,8 @@ public class TSP
         Iterator<Runnable> iterator = ((ThreadPoolExecutor) pool).getQueue().iterator();
         while (iterator.hasNext()) {
             Runnable runnable = iterator.next();
-            if (runnable instanceof FindTSPTask) {
-                FindTSPTask task = (FindTSPTask) runnable;
+            if (runnable instanceof FindTSPPoolTask) {
+                FindTSPPoolTask task = (FindTSPPoolTask) runnable;
                 if (task.getNode().getCost() > minCost) {
                     iterator.remove(); // Utiliza el iterador para eliminar de forma segura
                 }
