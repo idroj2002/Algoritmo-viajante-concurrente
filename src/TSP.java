@@ -1,5 +1,3 @@
-import org.javatuples.Pair;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -10,7 +8,6 @@ import java.util.*;
 import java.util.concurrent.*;
 
 import static java.lang.System.exit;
-import static java.lang.System.out;
 import static java.lang.Thread.sleep;
 
 
@@ -22,7 +19,7 @@ public class TSP
     public static final int CMatrixPading = 3;
     private static final int DefaultThreads = 8;
 
-    private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
+    private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoin}
 
     public int DistanceMatrix[][];
     // Priority queue to store live nodes of the search tree
@@ -113,7 +110,7 @@ public class TSP
                 this.concurrentMethod = ConcurrentMethod.CachedThreadPool;
                 break;
             case "ForkJoinPool":
-                this.concurrentMethod = ConcurrentMethod.ForkJoinPool;
+                this.concurrentMethod = ConcurrentMethod.ForkJoin;
                 break;
             default:
                 System.err.println("Invalid concurrent method. Concurrent methods accepted are:\n" +
@@ -202,7 +199,7 @@ public class TSP
     {
         Instant start = Instant.now();
 
-        Node solution = Solve(DistanceMatrix);
+        Node solution = concurrentMethod == ConcurrentMethod.ForkJoin ? ForkJoinSolve(DistanceMatrix) : PoolSolve(DistanceMatrix);
         printSolution("\nOptimal Solution: ", solution);
 
         Instant finish = Instant.now();
@@ -213,7 +210,7 @@ public class TSP
     }
 
     // Function to solve the traveling salesman problem using Branch and Bound
-    public Node Solve(int CostMatrix[][])
+    public Node PoolSolve(int CostMatrix[][])
     {
         Node min, child;
 
@@ -300,6 +297,77 @@ public class TSP
                 break;
             }
         }
+        return getSolution();  // Return solution
+    }
+
+    public Node ForkJoinSolve(int CostMatrix[][])
+    {
+        Node min, child;
+
+        System.out.println("\n___________________________________________________________________________________________________________________________________________________");
+        System.out.printf("Test with %d cities.\n",getNCities());
+
+        // Create a root node and calculate its cost. The TSP starts from the first city, i.e., node 0
+        Node root = new Node(this, CostMatrix);
+        //System.out.println(root);
+
+        // Calculate the lower bound of the path starting at node 0
+        root.calculateSetCost();
+
+        // Add root to the list of live nodes
+        pushNode(root);
+
+        // Pop a live node with the least cost, check it is a solution and adds its children to the list of live nodes.
+        while ((min=popNode())!=null) // Pop the live node with the least estimated cost
+        {
+            ProcessedNodes++;
+            if (true && (min.getTotalNodes()%10000)==0) System.out.printf("Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d\r",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
+            if (false && (min.getTotalNodes()%10000)==0)  System.out.println(NodesQueue);
+            // i stores the current city number
+            int i = min.getVertex();
+
+            // If all cities are visited
+            if (min.getLevel() == NCities-1)
+            {
+                // Return to starting city
+                min.addPathStep(i, 0);
+
+                if (getSolution()==null || min.getCost()<getSolution().getCost())
+                {   // Found sub-optimal solution
+                    setSolution(min);
+
+                    // Remove nodes from Nodes queue that can not improved last found solution
+                    PurgeWorseNodes(min.getCost());
+                }
+            }
+
+            // Do for each child of min (i, j) forms an edge in a space tree
+            for (int j = 0; j < NCities; j++)
+            {
+                // if city is not visited create child node
+                if (min.cityVisited(j)==false && min.getCostMatrix(i,j) != INF)
+                {
+
+                    // Create a child node and calculate its cost
+                    child = new Node(this, min, min.getLevel() + 1, i, j);
+                    int child_cost =    min.getCost() + min.getCostMatrix(i,j) +
+                            child.calculateCost();
+
+                    // Add node to pending nodes queue if its costs is lower than better solution
+                    if (getSolution()==null || child_cost<getSolution().getCost())
+                    {
+                        // Add a child to the list of live nodes
+                        child.setCost (child_cost);
+                        pushNode(child);
+                    }
+                    else if (getSolution()!=null && child_cost>getSolution().getCost())
+                        PurgedNodes++;
+                }
+            }
+        }
+
+        if (true) System.out.printf("\nFinal Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
+
         return getSolution();  // Return solution
     }
 
