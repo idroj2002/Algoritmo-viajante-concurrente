@@ -1,6 +1,7 @@
+import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
 
-public class FindTSPForkTask extends RecursiveTask<Node> {
+public class FindTSPForkTask extends RecursiveAction {
 
     TSP tsp;
     Node node;
@@ -11,7 +12,7 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
     }
 
     @Override
-    protected Node compute() {
+    protected void compute() {
         boolean finish = false;
         Node nextNode;
         if (TSP.debug) System.out.println("New thread started with node cost of: " + node.getCost());
@@ -56,10 +57,10 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
                         child.setCost (child_cost);
                         if (nextNode == null || child_cost < nextNode.getCost()) {
                             if (TSP.debug) System.out.println("New node started with cost: " + child.getCost());
-                            if (nextNode != null) tsp.addNodeToPool(nextNode);
+                            if (nextNode != null) tsp.addToForkJoinPool(nextNode);
                             nextNode = child;
                         } else {
-                            tsp.addNodeToPool(child);
+                            tsp.addToForkJoinPool(child);
                         }
                     }
                 }
@@ -68,6 +69,5 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
             if (nextNode == null) finish = true; // No tiene hijos
             else node = nextNode;
         }
-        return null
     }
 }

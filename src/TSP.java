@@ -35,6 +35,7 @@ public class TSP
     private ConcurrentMethod concurrentMethod;
     private PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
     private ForkJoinPool forkJoinPool = null;
+    private PriorityBlockingQueue forkQueue = new PriorityBlockingQueue();
 
     // Statistics of purged and processed nodes.
     private long PurgedNodes = 0;
@@ -316,9 +317,10 @@ public class TSP
         // Calculate the lower bound of the path starting at node 0
         root.calculateSetCost();
 
-        FindTSPForkTask findTSPForkTask = new FindTSPForkTask(this, root);
+        FindTSPForkTask task = addToForkJoinPool(root);
+        task.join();
 
-        return forkJoinPool.invoke(findTSPForkTask);
+        return getSolution();
 
         // Add root to the list of live nodes
         /*
@@ -379,8 +381,14 @@ public class TSP
         */
     }
 
+    public FindTSPForkTask addToForkJoinPool(Node node) {
+        FindTSPForkTask findTSPForkTask = new FindTSPForkTask(this, node);
+        forkJoinPool.invoke(findTSPForkTask);
+        return findTSPForkTask;
+    }
+
     public void addNodeToPool(Node node) {
-        pool.execute(new FindTSPPoolTask(this, node));
+         pool.execute(new FindTSPPoolTask(this, node));
     }
 
     // Add node to the queue of pending processing nodes
@@ -401,32 +409,26 @@ public class TSP
     // Purge nodes from the queue whose cost is bigger than the minCost.
     public void PurgeWorseNodes(int minCost)
     {
-        //System.out.println("PURGE WITH MAX COST OF " + minCost);
-        /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
-            FindTSPTask task = (FindTSPTask) runnable;
-            if (task.getNode().getCost() > minCost) {
-                ((ThreadPoolExecutor) pool).getQueue().remove(task);
-            }
-        });*/
-        Iterator<Runnable> iterator = ((ThreadPoolExecutor) pool).getQueue().iterator();
-        while (iterator.hasNext()) {
-            Runnable runnable = iterator.next();
-            if (runnable instanceof FindTSPPoolTask) {
-                FindTSPPoolTask task = (FindTSPPoolTask) runnable;
-                if (task.getNode().getCost() > minCost) {
+        if (concurrentMethod == ConcurrentMethod.ForkJoinPool) {
+            Iterator<Node> iterator = forkQueue.iterator();
+            while (iterator.hasNext()) {
+                Node node = iterator.next();
+                if (node.getCost() > minCost) {
                     iterator.remove(); // Utiliza el iterador para eliminar de forma segura
                 }
             }
-        }
-
-        /*System.out.print("END OF PURGE. QUEUE:\n[");
-        ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
-            FindTSPTask task = (FindTSPTask) runnable;
-            if (task != null) {
-                System.out.print(task.getNode().getCost() + ", ");
+        } else {
+            Iterator<Runnable> iterator = ((ThreadPoolExecutor) pool).getQueue().iterator();
+            while (iterator.hasNext()) {
+                Runnable runnable = iterator.next();
+                if (runnable instanceof FindTSPPoolTask) {
+                    FindTSPPoolTask task = (FindTSPPoolTask) runnable;
+                    if (task.getNode().getCost() > minCost) {
+                        iterator.remove(); // Utiliza el iterador para eliminar de forma segura
+                    }
+                }
             }
-        });
-        System.out.print("]\n");*/
+        }
     }
 
     // Print the solution to console
