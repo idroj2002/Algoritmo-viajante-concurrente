@@ -55,12 +55,20 @@ public class TSP
     public Node getSolution() { return solution.peek(); }
     public void setSolution(Node sol) {
         this.solution.add(sol);
-        /* ELIMINAR NODOS INNECESARIOS
-        solution.forEach(node -> {
+        // ELIMINAR NODOS INNECESARIOS
+        /*solution.forEach(node -> {
             if (node.getCost() > sol.getCost()) {
                 solution.remove(node);
             }
         });*/
+        System.out.print("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE:\n[");
+        ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
+            FindTSPTask task = (FindTSPTask) runnable;
+            if (task != null) {
+                if (task.getNode().getCost() > 364) System.out.print(task.getNode().getCost() + ", ");
+            }
+        });
+        System.out.print("]\n");
     }
     public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
     public int[][] getDistanceMatrix() {
@@ -128,7 +136,8 @@ public class TSP
 
     private void initPool() {
         if (concurrentMethod == ConcurrentMethod.FixedThreadPool) {
-            // pool = Executors.newFixedThreadPool(threads);
+            //pool = Executors.newFixedThreadPool(threads);
+            /**/
             BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPTaskComparator());
             pool = new ThreadPoolExecutor(
                     threads, // Tamaño del pool
@@ -136,6 +145,7 @@ public class TSP
                     0L, TimeUnit.MILLISECONDS, // Tiempo de espera antes de que se eliminen los hilos inactivos
                     queue // Cola de trabajos
             );
+            /**/
         } else if (concurrentMethod == ConcurrentMethod.CachedThreadPool) {
             pool = Executors.newCachedThreadPool();
         } else {
@@ -307,12 +317,22 @@ public class TSP
     // Purge nodes from the queue whose cost is bigger than the minCost.
     public void PurgeWorseNodes(int minCost)
     {
+        System.out.println("PURGE WITH MAX COST OF " + minCost);
         ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task != null && task.getNode().getCost() > minCost) {
                 ((ThreadPoolExecutor) pool).getQueue().remove(task);
             }
         });
+
+        System.out.print("END OF PURGE WITH COST " + minCost + ". QUEUE:\n[");
+        ((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
+            FindTSPTask task = (FindTSPTask) runnable;
+            if (task != null) {
+                if (task.getNode().getCost() > minCost) System.out.print(task.getNode().getCost() + ", ");
+            }
+        });
+        System.out.print("]\n");
     }
 
     // Print the solution to console
