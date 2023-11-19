@@ -35,7 +35,6 @@ public class TSP
     private ConcurrentMethod concurrentMethod;
     private PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
     private ForkJoinPool forkJoinPool = null;
-    private PriorityBlockingQueue forkQueue = new PriorityBlockingQueue();
 
     // Statistics of purged and processed nodes.
     private long PurgedNodes = 0;
@@ -157,7 +156,12 @@ public class TSP
             );
         } else {
             pool = null;
-            forkJoinPool = new ForkJoinPool(threads);
+            PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPForkTaskComparator());
+            forkJoinPool = new PriorityForkJoinPool(
+                    Runtime.getRuntime().availableProcessors(),
+                    ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+                    null, false, 1, 1, 0, TimeUnit.MILLISECONDS, queue
+            );
         }
     }
 
@@ -410,13 +414,8 @@ public class TSP
     public void PurgeWorseNodes(int minCost)
     {
         if (concurrentMethod == ConcurrentMethod.ForkJoinPool) {
-            Iterator<Node> iterator = forkQueue.iterator();
-            while (iterator.hasNext()) {
-                Node node = iterator.next();
-                if (node.getCost() > minCost) {
-                    iterator.remove(); // Utiliza el iterador para eliminar de forma segura
-                }
-            }
+            // To-do
+
         } else {
             Iterator<Runnable> iterator = ((ThreadPoolExecutor) pool).getQueue().iterator();
             while (iterator.hasNext()) {
