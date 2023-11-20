@@ -13,18 +13,14 @@ import static java.lang.Thread.sleep;
 
 public class TSP
 {
-    static Boolean DEBUG = false;
+    public static final Boolean DEBUG = false;
     //public static final int INF = Integer.MAX_VALUE;
     public static final int INF = -1;
     public static final int C_MATRIX_PADDING = 3;
     private static final int DEFAULT_THREADS = 8;
 
     private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
-
     public int[][] distanceMatrix;
-    // Priority queue to store live nodes of the search tree
-    PriorityQueue<Node> nodesQueue = new PriorityQueue<Node>(Collections.reverseOrder((Node c1, Node c2) -> Integer.compare(c1.getCost(),c2.getCost())));
-    // PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>();
     private int NCities = 0;
 
     // Concurrent variables
@@ -135,7 +131,6 @@ public class TSP
     private void initPool() {
         if (concurrentMethod == ConcurrentMethod.FixedThreadPool) {
             //pool = Executors.newFixedThreadPool(threads);
-            /**/
             BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPPoolTaskComparator());
 
             pool = new ThreadPoolExecutor(
@@ -144,7 +139,6 @@ public class TSP
                     0L, TimeUnit.MILLISECONDS, // Tiempo de espera antes de que se eliminen los hilos inactivos
                     queue // Cola de trabajos
             );
-            /**/
         } else if (concurrentMethod == ConcurrentMethod.CachedThreadPool) {
             BlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPPoolTaskComparator());
 
@@ -318,10 +312,15 @@ public class TSP
         // Calculate the lower bound of the path starting at node 0
         root.calculateSetCost();
 
-        FindTSPForkTask task = addToForkJoinPool(root);
-        task.join();
+        FindTSPForkTask principalTask = new FindTSPForkTask(this, root);
+        try {
+            return forkJoinPool.invoke(principalTask);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
 
-        return getSolution();
 
         // Add root to the list of live nodes
         /*
@@ -382,29 +381,8 @@ public class TSP
         */
     }
 
-    public FindTSPForkTask addToForkJoinPool(Node node) {
-        FindTSPForkTask findTSPForkTask = new FindTSPForkTask(this, node);
-        forkJoinPool.invoke(findTSPForkTask);
-        return findTSPForkTask;
-    }
-
     public void addNodeToPool(Node node) {
          pool.execute(new FindTSPPoolTask(this, node));
-    }
-
-    // Add node to the queue of pending processing nodes
-    public void pushNode(Node node)
-    {
-        nodesQueue.add(node);
-    }
-
-    // Remove node from the queue of pending processing nodes
-    public Node popNode()
-    {
-        if (nodesQueue.peek()==null)
-            return null;
-        else
-            return nodesQueue.poll();
     }
 
     // Purge nodes from the queue whose cost is bigger than the minCost.

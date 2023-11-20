@@ -1,20 +1,31 @@
+import java.util.ArrayList;
 import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
 
 public class FindTSPForkTask extends RecursiveTask<Node> {
-
+    private int LIMIT_CONCUR;
     TSP tsp;
     Node node;
 
     public FindTSPForkTask(TSP tsp, Node node) {
         this.tsp = tsp;
         this.node = node;
+        this.LIMIT_CONCUR = tsp.getNCities() - 2;
     }
 
     @Override
     protected Node compute() {
-
-        return null;
+        if (node.getLevel() == tsp.getNCities() - 1) {
+            // Si todas las ciudades han sido visitadas, volver a la ciudad de inicio
+            node.addPathStep(node.getVertex(), 0);
+            return node;
+        } else if (node.getLevel() > LIMIT_CONCUR) {
+            // Caso base: resolver de manera secuencial para tareas pequeñas
+            return solveSec();
+        } else {
+            // Dividir la tarea en sub-tareas y ejecutarlas en paralelo
+            return divideAndConquer();
+        }
 
         /*boolean finish = false;
         Node nextNode;
@@ -74,8 +85,51 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
         }*/
     }
 
-    private void addToForkJoinPool(Node node) {
-        FindTSPForkTask task = new FindTSPForkTask(tsp, node);
-        task.fork();
+    private Node solveSec() {
+        Node bestSol = null;
+        for (int i = 0; i < tsp.getNCities(); i++) {
+            if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF) {
+                Node child = new Node(tsp, node, node.getLevel() + 1, node.getVertex(), i);
+                child.addPathStep(node.getVertex(), i);
+                int child_cost = node.getCost() + node.getCostMatrix(node.getVertex(), i) +
+                        child.calculateCost();
+                child.setCost(child_cost);
+                Node newSol = new FindTSPForkTask(tsp, child).compute();
+                if (bestSol == null) {
+                    bestSol = newSol;
+                } else bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
+            }
+        }
+        return bestSol;
+    }
+
+    private Node divideAndConquer() {
+        // Dividir la tarea en sub-tareas
+        ArrayList<FindTSPForkTask> subTasks = new ArrayList<>();
+        for (int i = 0; i < tsp.getNCities(); i++) {
+            if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF) {
+                Node child = new Node(tsp, node, node.getLevel() + 1, node.getVertex(), i);
+                child.addPathStep(node.getVertex(), i);
+                int child_cost = node.getCost() + node.getCostMatrix(node.getVertex(), i) +
+                        child.calculateCost();
+                child.setCost(child_cost);
+                subTasks.add(new FindTSPForkTask(tsp, child));
+                subTasks.getLast().fork();
+            }
+        }
+
+        // Combinar los resultados de las sub-tareas
+        Node bestSol = null;
+        for (FindTSPForkTask subTask : subTasks) {
+            try {
+                Node newSol = subTask.join();
+                if (bestSol == null) {
+                    bestSol = newSol;
+                } else bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
+            } catch (Exception e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }
+        return bestSol;
     }
 }
