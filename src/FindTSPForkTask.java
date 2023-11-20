@@ -3,14 +3,14 @@ import java.util.concurrent.RecursiveAction;
 import java.util.concurrent.RecursiveTask;
 
 public class FindTSPForkTask extends RecursiveTask<Node> {
-    private int LIMIT_CONCUR;
+    private final int LIMIT_CONCUR;
     TSP tsp;
     Node node;
 
     public FindTSPForkTask(TSP tsp, Node node) {
         this.tsp = tsp;
         this.node = node;
-        this.LIMIT_CONCUR = tsp.getNCities() - 2;
+        this.LIMIT_CONCUR = tsp.getNCities() - 5;
     }
 
     @Override
@@ -88,9 +88,8 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
     private Node solveSec() {
         Node bestSol = null;
         for (int i = 0; i < tsp.getNCities(); i++) {
-            if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF) {
+            if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF && (bestSol == null || node.compareTo(bestSol) < 0)) {
                 Node child = new Node(tsp, node, node.getLevel() + 1, node.getVertex(), i);
-                child.addPathStep(node.getVertex(), i);
                 int child_cost = node.getCost() + node.getCostMatrix(node.getVertex(), i) +
                         child.calculateCost();
                 child.setCost(child_cost);
@@ -102,39 +101,24 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
                 }
             }
         }
-        if (bestSol == null) return node;
-        return bestSol;
+        return bestSol == null ? node : bestSol;
     }
 
     private Node divideAndConquer() {
         // Dividir la tarea en sub-tareas
-        ArrayList<FindTSPForkTask> subTasks = new ArrayList<>();
+        Node bestSol = null;
         for (int i = 0; i < tsp.getNCities(); i++) {
-            if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF) {
+            if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF && (bestSol == null || node.compareTo(bestSol) < 0)) {
                 Node child = new Node(tsp, node, node.getLevel() + 1, node.getVertex(), i);
-                child.addPathStep(node.getVertex(), i);
                 int child_cost = node.getCost() + node.getCostMatrix(node.getVertex(), i) +
                         child.calculateCost();
                 child.setCost(child_cost);
-                subTasks.add(new FindTSPForkTask(tsp, child));
-                subTasks.getLast().fork();
-            }
-        }
-
-        // Combinar los resultados de las sub-tareas
-        Node bestSol = null;
-        for (FindTSPForkTask subTask : subTasks) {
-            try {
+                FindTSPForkTask subTask = new FindTSPForkTask(tsp, child);
+                subTask.fork();
                 Node newSol = subTask.join();
-                if (bestSol == null) {
-                    bestSol = newSol;
-                } else {
-                    bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e.getMessage());
+                bestSol = (bestSol == null || newSol.compareTo(bestSol) < 0) ? newSol : bestSol;
             }
         }
-        return bestSol;
+        return bestSol == null ? node : bestSol;
     }
 }
