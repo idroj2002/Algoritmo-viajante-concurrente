@@ -12,7 +12,7 @@ class TSP_ConTest
     {
         TSP tsp;
         Node solution;
-        String[] concurrentTypes = {"FixedThreadPool"};//{"FixedThreadPool", "CachedThreadPool", "ForkJoinPool"};
+        String[] concurrentTypes = {"ForkJoinPool"};//{"FixedThreadPool", "CachedThreadPool", "ForkJoinPool"};
 
         for (String concurrentType:concurrentTypes){
             System.out.println("########################");
