@@ -15,7 +15,7 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
 
     @Override
     protected Node compute() {
-        if (node.getLevel() == tsp.getNCities() - 1) {
+        /*if (node.getLevel() == tsp.getNCities() - 1) {
             // Si todas las ciudades han sido visitadas, volver a la ciudad de inicio
             node.addPathStep(node.getVertex(), 0);
             return node;
@@ -25,11 +25,9 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
         } else {
             // Dividir la tarea en sub-tareas y ejecutarlas en paralelo
             return divideAndConquer();
-        }
-
-        /*boolean finish = false;
+        }*/
+        boolean finish = false;
         Node nextNode;
-        if (TSP.debug) System.out.println("New thread started with node cost of: " + node.getCost());
 
         while (!finish){
             nextNode = null;
@@ -44,12 +42,7 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
                 if (tsp.getSolution()==null || node.getCost()<tsp.getSolution().getCost())
                 {   // Found sub-optimal solution
                     tsp.setSolution(node);
-
-                    // Remove nodes from Nodes queue that can not improved last found solution
-                    tsp.PurgeWorseNodes(node.getCost());
                 }
-
-                if (TSP.debug) System.out.println("Cost = " + node.getCost());
             }
 
             // Do for each child of min (i, j) forms an edge in a space tree
@@ -70,22 +63,21 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
                         // Add a child to the list of live nodes
                         child.setCost (child_cost);
                         if (nextNode == null || child_cost < nextNode.getCost()) {
-                            if (TSP.debug) System.out.println("New node started with cost: " + child.getCost());
-                            if (nextNode != null) addToForkJoinPool(nextNode);
+                            if (nextNode != null) tsp.addToForkJoinPool(nextNode);
                             nextNode = child;
                         } else {
-                            addToForkJoinPool(child);
+                            tsp.addToForkJoinPool(child);
                         }
                     }
                 }
             }
-            if (TSP.debug && nextNode == null) System.out.println("No continue");
             if (nextNode == null) finish = true; // No tiene hijos
             else node = nextNode;
-        }*/
+        }
+        return null;
     }
 
-    private Node solveSec() {
+    /*private Node solveSec() {
         Node bestSol = null;
         for (int i = 0; i < tsp.getNCities(); i++) {
             if (!node.cityVisited(i) && node.getCostMatrix(node.getVertex(), i) != tsp.INF && (bestSol == null || node.compareTo(bestSol) < 0)) {
@@ -120,5 +112,5 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
             }
         }
         return bestSol == null ? node : bestSol;
-    }
+    }*/
 }
