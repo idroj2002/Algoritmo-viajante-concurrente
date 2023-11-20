@@ -19,7 +19,7 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
             // Si todas las ciudades han sido visitadas, volver a la ciudad de inicio
             node.addPathStep(node.getVertex(), 0);
             return node;
-        } else if (node.getLevel() > LIMIT_CONCUR) {
+        } else if (node.getLevel() >= LIMIT_CONCUR) {
             // Caso base: resolver de manera secuencial para tareas pequeñas
             return solveSec();
         } else {
@@ -97,9 +97,12 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
                 Node newSol = new FindTSPForkTask(tsp, child).compute();
                 if (bestSol == null) {
                     bestSol = newSol;
-                } else bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
+                } else {
+                    bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
+                }
             }
         }
+        if (bestSol == null) return node;
         return bestSol;
     }
 
@@ -125,7 +128,9 @@ public class FindTSPForkTask extends RecursiveTask<Node> {
                 Node newSol = subTask.join();
                 if (bestSol == null) {
                     bestSol = newSol;
-                } else bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
+                } else {
+                    bestSol = newSol.compareTo(bestSol) < 0 ? newSol : bestSol;
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage());
             }

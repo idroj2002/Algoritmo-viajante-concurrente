@@ -8,7 +8,7 @@ class TSP_ConTest
     public static final String ANSI_RESET = "\u001B[0m";
 
     @Test
-    public static void main(String[] args)
+    public void main()
     {
         TSP tsp;
         Node solution;
