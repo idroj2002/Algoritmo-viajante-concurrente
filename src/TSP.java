@@ -31,6 +31,7 @@ public class TSP
     private ForkJoinPool forkJoinPool = null;
 
     // Statistics of purged and processed nodes.
+    private ConcurrentHashMap<String, Long> metrics = new ConcurrentHashMap();
     private long purgedNodes = 0;
     private long processedNodes = 0;
 
@@ -41,6 +42,12 @@ public class TSP
     }
     public void setNCities(int NCities) {
         this.NCities = NCities;
+    }
+    public void incrementProcessedNodes() {
+        metrics.merge("processedNodes", 1L, Long::sum);
+    }
+    public void incrementPurgedNodes() {
+        metrics.merge("purgedNodes", 1L, Long::sum);
     }
     public Node getSolution() {
         return solution.peek();
@@ -53,7 +60,6 @@ public class TSP
                 solution.remove(node);
             }
         });*/
-        if (DEBUG) System.out.println("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE LENGTH: " + ((ThreadPoolExecutor) pool).getQueue().size());
         /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task != null) {
@@ -77,6 +83,7 @@ public class TSP
         this.threads = DEFAULT_THREADS;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
         initPool();
+        initMetrics();
     }
     public TSP(String citiesPath)
     {
@@ -84,7 +91,7 @@ public class TSP
         this.threads = DEFAULT_THREADS;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
         initPool();
-
+        initMetrics();
     }
     public TSP(String citiesPath, int threadsNum)
     {
@@ -92,6 +99,7 @@ public class TSP
         this.threads = threadsNum;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
         initPool();
+        initMetrics();
     }
     public TSP(String citiesPath, int threadsNum, String concurrentMethod)
     {
@@ -115,6 +123,13 @@ public class TSP
                 exit(-1);
         }
         initPool();
+        initMetrics();
+    }
+
+    public void initMetrics()
+    {
+        metrics.put("processedNodes", 0L);
+        metrics.put("purgedNodes", 0L);
     }
 
     public void initDefaultCitiesDistances()
@@ -275,8 +290,12 @@ public class TSP
                 }
             }
         }*/
+        long ProcessedNodes = metrics.get("processedNodes");
+        long PurgedNodes = metrics.get("purgedNodes");
+        long totalNodes = ProcessedNodes + PurgedNodes;
+        int a = 0;
 
-        // if (true) System.out.printf("\nFinal Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.",min.getTotalNodes(), ProcessedNodes, PurgedNodes, NodesQueue.size(),getSolution()==null?0:getSolution().getCost());
+        if (DEBUG) System.out.printf("\nTotal nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d.\r",totalNodes, ProcessedNodes, PurgedNodes, a/*NodesQueue.size()*/,getSolution()==null?0:getSolution().getCost());
         /*try {
             sleep(1000);
         } catch (InterruptedException e) {
@@ -286,6 +305,10 @@ public class TSP
             // Dormir por un breve período de tiempo para evitar una espera activa intensiva
             try {
                 sleep(100);
+                ProcessedNodes = metrics.get("processedNodes");
+                PurgedNodes = metrics.get("purgedNodes");
+                totalNodes = ProcessedNodes + PurgedNodes;
+                if (true) System.out.printf("Total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d\r",totalNodes, ProcessedNodes, PurgedNodes, ((ThreadPoolExecutor) pool).getQueue().size(),getSolution()==null?0:getSolution().getCost());
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
@@ -298,6 +321,10 @@ public class TSP
                 break;
             }
         }
+        ProcessedNodes = metrics.get("processedNodes");
+        PurgedNodes = metrics.get("purgedNodes");
+        totalNodes = ProcessedNodes + PurgedNodes;
+        if (true) System.out.printf("Final total nodes: %d \tProcessed nodes: %d \tPurged nodes: %d \tPending nodes: %d \tBest Solution: %d",totalNodes, ProcessedNodes, PurgedNodes, ((ThreadPoolExecutor) pool).getQueue().size(),getSolution()==null?0:getSolution().getCost());
         return getSolution();  // Return solution
     }
 
@@ -388,10 +415,7 @@ public class TSP
     // Purge nodes from the queue whose cost is bigger than the minCost.
     public void purgeWorseNodes(int minCost)
     {
-        if (concurrentMethod == ConcurrentMethod.ForkJoinPool) {
-            // To-do
-
-        } else {
+        if (concurrentMethod != ConcurrentMethod.ForkJoinPool) {
             Iterator<Runnable> iterator = ((ThreadPoolExecutor) pool).getQueue().iterator();
             while (iterator.hasNext()) {
                 Runnable runnable = iterator.next();
@@ -399,6 +423,7 @@ public class TSP
                     FindTSPPoolTask task = (FindTSPPoolTask) runnable;
                     if (task.getNode().getCost() > minCost) {
                         iterator.remove(); // Utiliza el iterador para eliminar de forma segura
+                        incrementPurgedNodes();
                     }
                 }
             }
