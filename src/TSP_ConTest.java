@@ -12,14 +12,14 @@ class TSP_ConTest
     {
         TSP tsp;
         Node solution;
-        String[] concurrentTypes = {"ForkJoinPool"};//{"FixedThreadPool", "CachedThreadPool", "ForkJoinPool"};
+        String[] concurrentTypes = {"FixedThreadPool"};//{"FixedThreadPool", "CachedThreadPool", "ForkJoinPool"};
 
         for (String concurrentType:concurrentTypes){
             System.out.println("########################");
             System.out.println("Initializing tests of " + concurrentType);
             System.out.println("########################");
             tsp = new TSP("./Ejemplos_Ciudades/tsp4", 8, concurrentType);
-            solution = tsp.Solve();
+            solution = tsp.solve();
             try {
                 assertEquals(solution.getCost(),8);
             }catch (AssertionError e){
@@ -27,7 +27,7 @@ class TSP_ConTest
             }
 
             tsp = new TSP("./Ejemplos_Ciudades/tsp10", 8, concurrentType);
-            solution = tsp.Solve();
+            solution = tsp.solve();
             try {
                 assertEquals(solution.getCost(),96);
             }catch (AssertionError e){
@@ -35,7 +35,7 @@ class TSP_ConTest
             }
 
             tsp = new TSP("./Ejemplos_Ciudades/tsp15", 8, concurrentType);
-            solution = tsp.Solve();
+            solution = tsp.solve();
             try {
                 assertEquals(solution.getCost(),140);
             }catch (AssertionError e){
@@ -43,7 +43,7 @@ class TSP_ConTest
             }
 
             tsp = new TSP("./Ejemplos_Ciudades/tsp20", 8, concurrentType);
-            solution = tsp.Solve();
+            solution = tsp.solve();
             try {
                 assertEquals(solution.getCost(),172);
             }catch (AssertionError e){
@@ -51,7 +51,7 @@ class TSP_ConTest
             }
 
             tsp = new TSP("./Ejemplos_Ciudades/tsp30", 8, concurrentType);
-            solution = tsp.Solve();
+            solution = tsp.solve();
             try {
                 assertEquals(solution.getCost(),353);
             }catch (AssertionError e){
@@ -59,7 +59,7 @@ class TSP_ConTest
             }
 
             tsp = new TSP("./Ejemplos_Ciudades/tsp40", 8, concurrentType);
-            solution = tsp.Solve();
+            solution = tsp.solve();
             try {
                 assertEquals(solution.getCost(),297);
             }catch (AssertionError e){

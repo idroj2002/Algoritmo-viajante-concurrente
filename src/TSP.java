@@ -13,32 +13,30 @@ import static java.lang.Thread.sleep;
 
 public class TSP
 {
-    static Boolean debug = false;
+    static Boolean DEBUG = false;
     //public static final int INF = Integer.MAX_VALUE;
     public static final int INF = -1;
-    public static final int CMatrixPading = 3;
-    private static final int DefaultThreads = 8;
+    public static final int C_MATRIX_PADDING = 3;
+    private static final int DEFAULT_THREADS = 8;
 
     private enum ConcurrentMethod { FixedThreadPool, CachedThreadPool, ForkJoinPool }
 
-    public int DistanceMatrix[][];
+    public int[][] distanceMatrix;
     // Priority queue to store live nodes of the search tree
-    PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>(Collections.reverseOrder((Node c1, Node c2) -> Integer.compare(c1.getCost(),c2.getCost())));
+    PriorityQueue<Node> nodesQueue = new PriorityQueue<Node>(Collections.reverseOrder((Node c1, Node c2) -> Integer.compare(c1.getCost(),c2.getCost())));
     // PriorityQueue<Node> NodesQueue = new PriorityQueue<Node>();
-    private int NCities=0;
-
-    private Node Solution=null;
+    private int NCities = 0;
 
     // Concurrent variables
     private ExecutorService pool;
-    private int threads;
+    private final int threads;
     private ConcurrentMethod concurrentMethod;
-    private PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
+    private final PriorityBlockingQueue<Node> solution = new PriorityBlockingQueue<>();
     private ForkJoinPool forkJoinPool = null;
 
     // Statistics of purged and processed nodes.
-    private long PurgedNodes = 0;
-    private long ProcessedNodes = 0;
+    private long purgedNodes = 0;
+    private long processedNodes = 0;
 
 
     // Getters & Setters
@@ -59,7 +57,7 @@ public class TSP
                 solution.remove(node);
             }
         });*/
-        if (debug) System.out.println("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE LENGTH: " + ((ThreadPoolExecutor) pool).getQueue().size());
+        if (DEBUG) System.out.println("NEW SOLUTION ADDED WITH COST " + sol.getCost() + ". QUEUE LENGTH: " + ((ThreadPoolExecutor) pool).getQueue().size());
         /*((ThreadPoolExecutor) pool).getQueue().forEach(runnable -> {
             FindTSPTask task = (FindTSPTask) runnable;
             if (task != null) {
@@ -68,40 +66,40 @@ public class TSP
         });
         System.out.print("]\n");*/
     }
-    public int getDistanceMatrix(int i, int j) { return DistanceMatrix[i][j]; }
+    public int getDistanceMatrix(int i, int j) { return distanceMatrix[i][j]; }
     public int[][] getDistanceMatrix() {
-        return DistanceMatrix;
+        return distanceMatrix;
     }
-    public long getPurgedNodes() { return PurgedNodes; }
-    public long getProcessedNodes() { return ProcessedNodes; }
-    public void prugedNodesIncrement() { PurgedNodes++; }
+    public long getPurgedNodes() { return purgedNodes; }
+    public long getProcessedNodes() { return processedNodes; }
+    public void prugedNodesIncrement() { purgedNodes++; }
 
     // Constructors.
     public TSP()
     {
-        InitDefaultCitiesDistances();
-        this.threads = DefaultThreads;
+        initDefaultCitiesDistances();
+        this.threads = DEFAULT_THREADS;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
         initPool();
     }
     public TSP(String citiesPath)
     {
-        ReadCitiesFile(citiesPath);
-        this.threads = DefaultThreads;
+        radCitiesFile(citiesPath);
+        this.threads = DEFAULT_THREADS;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
         initPool();
 
     }
     public TSP(String citiesPath, int threadsNum)
     {
-        ReadCitiesFile(citiesPath);
+        radCitiesFile(citiesPath);
         this.threads = threadsNum;
         this.concurrentMethod = ConcurrentMethod.FixedThreadPool;
         initPool();
     }
     public TSP(String citiesPath, int threadsNum, String concurrentMethod)
     {
-        ReadCitiesFile(citiesPath);
+        radCitiesFile(citiesPath);
         this.threads = threadsNum;
         switch (concurrentMethod) {
             case "FixedThreadPool":
@@ -123,13 +121,15 @@ public class TSP
         initPool();
     }
 
-    public void InitDefaultCitiesDistances()
+    public void initDefaultCitiesDistances()
     {
-        DistanceMatrix = new int[][]{{INF, 10, 15, 20},
+        distanceMatrix = new int[][]{{INF, 10, 15, 20},
                                     {10, INF, 35, 25},
                                     {15, 35, INF, 30},
                                     {20, 25, 30, INF}};
         NCities = 4;
+        System.out.println("Default matrix:\n" + Arrays.deepToString(distanceMatrix));
+        System.out.println("Num. of cities:" + NCities);
     }
 
     private void initPool() {
@@ -156,16 +156,17 @@ public class TSP
             );
         } else {
             pool = null;
-            PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPForkTaskComparator());
+            /*PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<>(11, new FindTSPForkTaskComparator());
             forkJoinPool = new PriorityForkJoinPool(
                     Runtime.getRuntime().availableProcessors(),
                     ForkJoinPool.defaultForkJoinWorkerThreadFactory,
                     null, false, 1, 1, 0, TimeUnit.MILLISECONDS, queue
-            );
+            );*/
+            forkJoinPool = new ForkJoinPool();
         }
     }
 
-    public void ReadCitiesFile (String citiesPath)
+    public void radCitiesFile(String citiesPath)
     {
         Scanner input = null;
         try {
@@ -179,14 +180,14 @@ public class TSP
                 System.err.printf("[TSP::ReadCitiesFile] Error reading cities number on %s.\n", citiesPath);
 
             // Init cities' distances matrix
-            DistanceMatrix = new int[NCities][NCities];
+            distanceMatrix = new int[NCities][NCities];
 
             // Read cities distances
             for (int i = 0; i < NCities; ++i) {
                 for (int j = 0; j < NCities; ++j) {
-                    DistanceMatrix[i][j] = 0;
+                    distanceMatrix[i][j] = 0;
                     if (input.hasNextInt())
-                        DistanceMatrix[i][j] = input.nextInt();
+                        distanceMatrix[i][j] = input.nextInt();
                     else
                         System.err.printf("[TSP::ReadCitiesFile] Error reading distance beetwen cities %d-%d.\n", i, j);
                 }
@@ -195,18 +196,20 @@ public class TSP
         } catch (FileNotFoundException e) {
             System.err.printf("[TSP::ReadCitiesFile] File %s not found.\n",citiesPath);
             e.printStackTrace();
-        } catch (
-            IOException e) {
+        } catch (IOException e) {
             System.err.printf("[TSP::ReadCitiesFile] Error file reading %s.\n",citiesPath);
             e.printStackTrace();
         }
     }
 
-    public Node Solve()
+    public Node solve()
     {
         Instant start = Instant.now();
 
-        Node solution = concurrentMethod == ConcurrentMethod.ForkJoinPool ? ForkJoinSolve(DistanceMatrix) : PoolSolve(DistanceMatrix);
+        System.out.println("\n___________________________________________________________________________________________________________________________________________________");
+        System.out.printf("Test with %d cities.\n",getNCities());
+
+        Node solution = concurrentMethod == ConcurrentMethod.ForkJoinPool ? forkJoinSolve(distanceMatrix) : poolSolve(distanceMatrix);
         printSolution("\nOptimal Solution: ", solution);
 
         Instant finish = Instant.now();
@@ -217,12 +220,9 @@ public class TSP
     }
 
     // Function to solve the traveling salesman problem using Branch and Bound
-    public Node PoolSolve(int CostMatrix[][])
+    public Node poolSolve(int CostMatrix[][])
     {
         Node min, child;
-
-        System.out.println("\n___________________________________________________________________________________________________________________________________________________");
-        System.out.printf("Test with %d cities.\n",getNCities());
 
         // Create a root node and calculate its cost. The TSP starts from the first city, i.e., node 0
         Node root = new Node(this, CostMatrix);
@@ -307,12 +307,9 @@ public class TSP
         return getSolution();  // Return solution
     }
 
-    public Node ForkJoinSolve(int CostMatrix[][])
+    public Node forkJoinSolve(int CostMatrix[][])
     {
         Node min, child;
-
-        System.out.println("\n___________________________________________________________________________________________________________________________________________________");
-        System.out.printf("Test with %d cities.\n",getNCities());
 
         // Create a root node and calculate its cost. The TSP starts from the first city, i.e., node 0
         Node root = new Node(this, CostMatrix);
@@ -398,20 +395,20 @@ public class TSP
     // Add node to the queue of pending processing nodes
     public void pushNode(Node node)
     {
-        NodesQueue.add(node);
+        nodesQueue.add(node);
     }
 
     // Remove node from the queue of pending processing nodes
     public Node popNode()
     {
-        if (NodesQueue.peek()==null)
+        if (nodesQueue.peek()==null)
             return null;
         else
-            return NodesQueue.poll();
+            return nodesQueue.poll();
     }
 
     // Purge nodes from the queue whose cost is bigger than the minCost.
-    public void PurgeWorseNodes(int minCost)
+    public void purgeWorseNodes(int minCost)
     {
         if (concurrentMethod == ConcurrentMethod.ForkJoinPool) {
             // To-do

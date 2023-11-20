@@ -3,7 +3,6 @@ import org.javatuples.Pair;
 
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
@@ -245,7 +244,7 @@ public class Node implements Comparable<Node>
         for (int i = 0; i < reducedMatrix.length; i++) {
             str += ((str.length() > 0) ? "\n\t\t" : "") + "[";
             for (int j = 0; j < reducedMatrix[0].length; j++)
-                str += String.format("%1$"+tsp.CMatrixPading+ "s",reducedMatrix[i][j]) + ((j < reducedMatrix[0].length - 1) ? " " : " ");
+                str += String.format("%1$"+tsp.C_MATRIX_PADDING + "s",reducedMatrix[i][j]) + ((j < reducedMatrix[0].length - 1) ? " " : " ");
             str += "]";
         }
         return str+"\n";

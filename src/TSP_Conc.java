@@ -27,7 +27,7 @@ public class TSP_Conc
             tsp = new TSP(args[0], threadsNum, args[2]);
         }
 
-        Node solution = tsp.Solve();
+        Node solution = tsp.solve();
         System.exit(0);
     }
 

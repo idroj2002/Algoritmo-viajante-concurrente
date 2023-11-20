@@ -14,10 +14,10 @@ public class FindTSPPoolTask implements Runnable {
     public void run() {
         boolean finish = false;
         Node nextNode;
-        if (TSP.debug) System.out.println("New thread started with node cost of: " + node.getCost());
+        if (TSP.DEBUG) System.out.println("New thread started with node cost of: " + node.getCost());
 
         while (!finish){
-            if (TSP.debug) {
+            if (TSP.DEBUG) {
                 for (Boolean visit : node.visitedCities) {
                     if (visit) System.out.print("T");
                     else System.out.print("F");
@@ -38,10 +38,10 @@ public class FindTSPPoolTask implements Runnable {
                     tsp.setSolution(node);
 
                     // Remove nodes from Nodes queue that can not improved last found solution
-                    tsp.PurgeWorseNodes(node.getCost());
+                    tsp.purgeWorseNodes(node.getCost());
                 }
 
-                if (TSP.debug) System.out.println("Cost = " + node.getCost());
+                if (TSP.DEBUG) System.out.println("Cost = " + node.getCost());
             }
 
             // Do for each child of min (i, j) forms an edge in a space tree
@@ -62,7 +62,7 @@ public class FindTSPPoolTask implements Runnable {
                         // Add a child to the list of live nodes
                         child.setCost (child_cost);
                         if (nextNode == null || child_cost < nextNode.getCost()) {
-                            if (TSP.debug) System.out.println("New node started with cost: " + child.getCost());
+                            if (TSP.DEBUG) System.out.println("New node started with cost: " + child.getCost());
                             if (nextNode != null) tsp.addNodeToPool(nextNode);
                             nextNode = child;
                         } else {
@@ -71,7 +71,7 @@ public class FindTSPPoolTask implements Runnable {
                     }
                 }
             }
-            if (TSP.debug && nextNode == null) System.out.println("No continue");
+            if (TSP.DEBUG && nextNode == null) System.out.println("No continue");
             if (nextNode == null) finish = true; // No tiene hijos
             else node = nextNode;
         }
